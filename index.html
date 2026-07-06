@@ -1,11 +1,9 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
+<html lang="fr"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
     <title>🧠 Braincode v1.2.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz@14..32&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz@14..32&amp;display=swap">
     <style>
         * { font-family: 'Inter', sans-serif; }
         ::-webkit-scrollbar { width: 4px; }
@@ -45,9 +43,13 @@
         }
     </style>
 
-<link rel="manifest" href="manifest.json">
+<link rel="manifest" href="./manifest.json">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#4b6cb7">
-<link rel="apple-touch-icon" href="icon.png"></head>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="icon.png">
+</head>
 
 <body class="min-h-screen text-gray-200 antialiased pb-24 safe-bottom">
 
@@ -70,8 +72,7 @@
         <section class="card rounded-3xl p-4 space-y-2">
             <label class="text-xs font-medium text-white/40 uppercase tracking-wider">🔑 Clé API</label>
             <div class="flex gap-2">
-                <input type="password" id="apiKeyInput" placeholder="sk-… colle ta clé"
-                class="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-app" />
+                <input type="password" id="apiKeyInput" placeholder="sk-… colle ta clé" class="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-app">
                 <button id="saveKeyBtn" class="bg-blue-600 hover:bg-blue-500 active:scale-95 transition-app px-5 py-3 rounded-xl text-sm font-medium text-white shadow-lg shadow-blue-600/20">💾</button>
             </div>
             <div class="flex gap-2 items-center">
@@ -93,8 +94,7 @@
                     <button id="resetCodeBtn" class="text-xs bg-white/5 hover:bg-red-500/20 px-3 py-1.5 rounded-full text-white/30 transition-app">🗑️</button>
                 </div>
             </div>
-            <textarea id="fullCodeInput" rows="5" placeholder="Colle ton code HTML ici..."
-            class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-gray-200 placeholder-white/20 font-mono resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-app"></textarea>
+            <textarea id="fullCodeInput" rows="5" placeholder="Colle ton code HTML ici..." class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-gray-200 placeholder-white/20 font-mono resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-app"></textarea>
             <div class="flex justify-between text-[10px] text-white/30">
                 <span id="codeStats">📊 0 sections</span>
                 <span id="tagStatus">⚪ Non balisé</span>
@@ -110,14 +110,12 @@
                     <button id="toggleBatchBtn" class="text-xs bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-full text-white/50 transition-app">📋 Batch</button>
                 </div>
             </div>
-            <input type="text" id="instructionsInput" placeholder="Ex: Change la couleur du bouton en bleu"
-            class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-app" />
+            <input type="text" id="instructionsInput" placeholder="Ex: Change la couleur du bouton en bleu" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-app">
             <div class="flex justify-end">
                 <span class="shortcut-hint">⌨️ Ctrl+Enter → Patcher · Ctrl+B → Baliser · Ctrl+Z → Undo</span>
             </div>
             <div id="batchContainer" class="hidden space-y-2">
-                <textarea id="batchInput" rows="3" placeholder="Une instruction par ligne..."
-                class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/20 font-mono resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-app"></textarea>
+                <textarea id="batchInput" rows="3" placeholder="Une instruction par ligne..." class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/20 font-mono resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-app"></textarea>
                 <button id="batchSendBtn" class="w-full bg-blue-600/30 hover:bg-blue-600/40 active:scale-95 transition-app py-2.5 rounded-xl text-sm font-medium text-blue-300 border border-blue-500/20">🚀 Exécuter le batch</button>
             </div>
         </section>
@@ -149,8 +147,7 @@
                     <button id="showHistoryBtn" class="text-xs bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-full text-white/50 transition-app">📜</button>
                 </div>
             </div>
-            <div id="finalCodeDisplay"
-            class="bg-black/40 border border-white/10 rounded-xl p-3 min-h-[60px] max-h-48 overflow-auto text-xs font-mono text-gray-300 whitespace-pre-wrap">
+            <div id="finalCodeDisplay" class="bg-black/40 border border-white/10 rounded-xl p-3 min-h-[60px] max-h-48 overflow-auto text-xs font-mono text-gray-300 whitespace-pre-wrap">
             ⏳ Aucun code
         </div>
     </section>
@@ -176,8 +173,7 @@
                 <button id="copyConsoleBtn" class="text-xs bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-full text-white/50 transition-app">📋</button>
             </div>
         </div>
-        <div id="consoleOutput"
-        class="bg-black/40 border border-white/10 rounded-xl p-3 min-h-[60px] max-h-40 overflow-auto font-mono text-[10px] text-gray-400 whitespace-pre-wrap leading-relaxed">
+        <div id="consoleOutput" class="bg-black/40 border border-white/10 rounded-xl p-3 min-h-[60px] max-h-40 overflow-auto font-mono text-[10px] text-gray-400 whitespace-pre-wrap leading-relaxed">
         ⏳ Console prête...
     </div>
 </section>
@@ -208,8 +204,7 @@
             <h2 class="text-lg font-bold text-white">📜 Historique</h2>
             <button id="closeHistoryBtn" class="text-white/50 hover:text-white/80 transition-app">✕</button>
         </div>
-        <input type="text" id="historySearch" placeholder="🔍 Chercher dans l'historique..."
-        class="bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-app mb-3" />
+        <input type="text" id="historySearch" placeholder="🔍 Chercher dans l'historique..." class="bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-app mb-3">
         <div id="historyList" class="flex-1 overflow-auto space-y-2 text-sm">
             <div class="text-white/30 italic">Aucun historique</div>
         </div>
@@ -425,9 +420,7 @@
     // === SANDBOX ===
     function updateSandbox() {
         try {
-            var htmlContent = fullCode || '<html><body><p class="text-white/40 p-4">⏳ Aucun code</p>
-<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js'));}</script>
-</body></html>';
+            var htmlContent = fullCode || '<html><body><p class="text-white/40 p-4">⏳ Aucun code</p></body></html>';
             sandboxIframe.srcdoc = htmlContent;
         } catch (e) {
             log('❌ Erreur sandbox: ' + e.message, 'error');
@@ -1322,5 +1315,15 @@
 })();
 </script>
 
-</body>
-</html>
+
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then(reg => console.log('Service Worker enregistré !'))
+        .catch(err => console.error('Erreur SW :', err));
+    });
+  }
+</script>
+</body></html>
