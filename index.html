@@ -1,0 +1,1326 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
+    <title>🧠 Braincode v1.2.2</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz@14..32&display=swap" />
+    <style>
+        * { font-family: 'Inter', sans-serif; }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 99px; }
+        body { background: #050505; touch-action: pan-y; }
+        .glass { background: rgba(18, 18, 18, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.06); }
+        .card { background: #121212; border: 1px solid rgba(255,255,255,0.06); box-shadow: 0 8px 32px rgba(0,0,0,0.6); }
+        .btn-press:active { transform: scale(0.95); }
+        .transition-app { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+        .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+        .version-badge { font-size: 9px; background: rgba(59,130,246,0.2); color: #60a5fa; padding: 2px 8px; border-radius: 99px; border: 1px solid rgba(59,130,246,0.2); }
+        .diff-preview { background: #0d1117; border: 1px solid #30363d; border-radius: 12px; padding: 12px; margin-top: 8px; max-height: 300px; overflow: auto; }
+        .diff-old { color: #f85149; white-space: pre-wrap; font-family: monospace; font-size: 12px; }
+        .diff-new { color: #3fb950; white-space: pre-wrap; font-family: monospace; font-size: 12px; }
+        .patch-flash { animation: flash-green 0.8s ease; }
+        @keyframes flash-green { 0% { background: rgba(16, 185, 129, 0.4); } 100% { background: transparent; } }
+        .shortcut-hint { font-size: 9px; color: rgba(255,255,255,0.15); letter-spacing: 0.5px; }
+        .typing-cursor { animation: blink 1s step-end infinite; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+        .progress-bar { height: 2px; background: rgba(59,130,246,0.2); border-radius: 99px; overflow: hidden; }
+        .progress-bar-inner { height: 100%; background: #3b82f6; width: 0%; transition: width 0.3s ease; }
+        /* Fullscreen Iframe */
+        .sandbox-fullscreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1000;
+            border-radius: 0 !important;
+            border: none !important;
+            background: #0f0f12;
+        }
+        .sandbox-fullscreen + .fullscreen-overlay {
+            display: block;
+        }
+    </style>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#4b6cb7">
+<link rel="apple-touch-icon" href="icon.png"></head>
+
+<body class="min-h-screen text-gray-200 antialiased pb-24 safe-bottom">
+
+    <main class="max-w-lg mx-auto px-4 pt-4 pb-6 space-y-4">
+
+        <!-- EN-TÊTE -->
+        <header class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <span class="text-2xl">🧠</span>
+                <h1 class="text-xl font-bold text-white tracking-tight">Braincode</h1>
+                <span class="version-badge">v1.2.2</span>
+            </div>
+            <div class="flex items-center gap-2 text-xs text-white/40">
+                <span id="balanceDisplay" class="font-mono">💰 ⏳</span>
+                <button id="refreshBalanceBtn" class="text-white/30 hover:text-white/70 transition-app">↻</button>
+            </div>
+        </header>
+
+        <!-- CARTE : Clé API + Provider -->
+        <section class="card rounded-3xl p-4 space-y-2">
+            <label class="text-xs font-medium text-white/40 uppercase tracking-wider">🔑 Clé API</label>
+            <div class="flex gap-2">
+                <input type="password" id="apiKeyInput" placeholder="sk-… colle ta clé"
+                class="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-app" />
+                <button id="saveKeyBtn" class="bg-blue-600 hover:bg-blue-500 active:scale-95 transition-app px-5 py-3 rounded-xl text-sm font-medium text-white shadow-lg shadow-blue-600/20">💾</button>
+            </div>
+            <div class="flex gap-2 items-center">
+                <select id="providerSelect" class="bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-app">
+                    <option value="deepseek">DeepSeek</option>
+                    <option value="openai">OpenAI</option>
+                    <option value="anthropic">Anthropic</option>
+                </select>
+                <div id="keyStatus" class="text-xs text-white/30">⚪ Aucune clé</div>
+            </div>
+        </section>
+
+        <!-- CARTE : Code Source -->
+        <section class="card rounded-3xl p-4 space-y-2">
+            <div class="flex items-center justify-between">
+                <label class="text-xs font-medium text-white/40 uppercase tracking-wider">📄 Code Source</label>
+                <div class="flex gap-2">
+                    <button id="loadExampleBtn" class="text-xs bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-full text-white/50 transition-app">📥 Exemple</button>
+                    <button id="resetCodeBtn" class="text-xs bg-white/5 hover:bg-red-500/20 px-3 py-1.5 rounded-full text-white/30 transition-app">🗑️</button>
+                </div>
+            </div>
+            <textarea id="fullCodeInput" rows="5" placeholder="Colle ton code HTML ici..."
+            class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-gray-200 placeholder-white/20 font-mono resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-app"></textarea>
+            <div class="flex justify-between text-[10px] text-white/30">
+                <span id="codeStats">📊 0 sections</span>
+                <span id="tagStatus">⚪ Non balisé</span>
+            </div>
+        </section>
+
+        <!-- CARTE : Instructions + Undo -->
+        <section class="card rounded-3xl p-4 space-y-2">
+            <div class="flex items-center justify-between">
+                <label class="text-xs font-medium text-white/40 uppercase tracking-wider">📝 Instructions</label>
+                <div class="flex gap-2">
+                    <button id="undoBtn" class="text-xs bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-full text-white/50 transition-app disabled:opacity-30 disabled:pointer-events-none" title="Ctrl+Z">↺ Undo</button>
+                    <button id="toggleBatchBtn" class="text-xs bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-full text-white/50 transition-app">📋 Batch</button>
+                </div>
+            </div>
+            <input type="text" id="instructionsInput" placeholder="Ex: Change la couleur du bouton en bleu"
+            class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-app" />
+            <div class="flex justify-end">
+                <span class="shortcut-hint">⌨️ Ctrl+Enter → Patcher · Ctrl+B → Baliser · Ctrl+Z → Undo</span>
+            </div>
+            <div id="batchContainer" class="hidden space-y-2">
+                <textarea id="batchInput" rows="3" placeholder="Une instruction par ligne..."
+                class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/20 font-mono resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-app"></textarea>
+                <button id="batchSendBtn" class="w-full bg-blue-600/30 hover:bg-blue-600/40 active:scale-95 transition-app py-2.5 rounded-xl text-sm font-medium text-blue-300 border border-blue-500/20">🚀 Exécuter le batch</button>
+            </div>
+        </section>
+
+        <!-- CARTE : Patches -->
+        <section class="card rounded-3xl p-4 space-y-2">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-medium text-white/40 uppercase tracking-wider">🧩 Patches</span>
+                <span class="text-[10px] text-white/30" id="patchTimestamp"></span>
+            </div>
+            <div id="patchesContainer" class="text-sm text-white/40 italic min-h-[40px]">
+                En attente d'instructions...
+            </div>
+            <!-- Barre de progression (streaming) -->
+            <div class="progress-bar mt-2">
+                <div class="progress-bar-inner" id="progressBar"></div>
+            </div>
+            <!-- Zone d'affichage du streaming -->
+            <div id="streamDisplay" class="bg-black/30 rounded-xl p-3 mt-2 text-xs text-gray-300 font-mono whitespace-pre-wrap max-h-32 overflow-auto hidden"></div>
+        </section>
+
+        <!-- CARTE : Code Final -->
+        <section class="card rounded-3xl p-4 space-y-2">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-medium text-white/40 uppercase tracking-wider">📦 Code Final</span>
+                <div class="flex gap-2">
+                    <button id="copyFinalBtn" class="text-xs bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-full text-white/50 transition-app">📋</button>
+                    <button id="exportFinalBtn" class="text-xs bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-full text-white/50 transition-app">⬇️</button>
+                    <button id="showHistoryBtn" class="text-xs bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-full text-white/50 transition-app">📜</button>
+                </div>
+            </div>
+            <div id="finalCodeDisplay"
+            class="bg-black/40 border border-white/10 rounded-xl p-3 min-h-[60px] max-h-48 overflow-auto text-xs font-mono text-gray-300 whitespace-pre-wrap">
+            ⏳ Aucun code
+        </div>
+    </section>
+
+    <!-- CARTE : Sandbox -->
+    <section class="card rounded-3xl p-4 space-y-2">
+        <div class="flex items-center justify-between">
+            <span class="text-xs font-medium text-white/40 uppercase tracking-wider">🏖️ Aperçu en direct</span>
+            <div class="flex gap-2">
+                <button id="fullscreenSandboxBtn" class="text-xs bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-full text-white/50 transition-app" title="Plein écran (⛶)">⛶</button>
+                <button id="refreshSandboxBtn" class="text-xs bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-full text-white/50 transition-app">↻</button>
+            </div>
+        </div>
+        <iframe id="sandboxIframe" class="w-full bg-white/5 rounded-xl border border-white/10 transition-all duration-300" style="height: 200px; resize: vertical;"></iframe>
+    </section>
+
+    <!-- CARTE : Console -->
+    <section class="card rounded-3xl p-4 space-y-2">
+        <div class="flex items-center justify-between">
+            <span class="text-xs font-medium text-white/40 uppercase tracking-wider">📋 Console</span>
+            <div class="flex gap-2">
+                <button id="clearConsoleBtn" class="text-xs bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-full text-white/30 transition-app">🗑️</button>
+                <button id="copyConsoleBtn" class="text-xs bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-full text-white/50 transition-app">📋</button>
+            </div>
+        </div>
+        <div id="consoleOutput"
+        class="bg-black/40 border border-white/10 rounded-xl p-3 min-h-[60px] max-h-40 overflow-auto font-mono text-[10px] text-gray-400 whitespace-pre-wrap leading-relaxed">
+        ⏳ Console prête...
+    </div>
+</section>
+
+<!-- Signature discrète -->
+<footer class="text-center text-[10px] text-white/10 pt-4 pb-2 tracking-wider select-none">
+    Made by Laiche Brahim 2026 Paris
+</footer>
+
+</main>
+
+<!-- ====== BOTTOM ACTION BAR ====== -->
+<nav class="fixed bottom-0 left-0 right-0 glass border-t border-white/5 px-4 py-3 safe-bottom z-50">
+    <div class="max-w-lg mx-auto flex items-center gap-3">
+        <button id="autoTagBtn" class="flex-1 bg-white/5 hover:bg-white/10 active:scale-95 transition-app py-3.5 rounded-2xl text-sm font-medium text-white/70 border border-white/5 flex items-center justify-center gap-2">
+            🏷️ Baliser
+        </button>
+        <button id="sendBtn" class="flex-1 bg-blue-600 hover:bg-blue-500 active:scale-95 transition-app py-3.5 rounded-2xl text-sm font-medium text-white shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2 disabled:opacity-50 disabled:pointer-events-none">
+            🚀 Patcher
+        </button>
+    </div>
+</nav>
+
+<!-- ====== MODALE HISTORIQUE ====== -->
+<div id="historyModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 hidden p-4">
+    <div class="card rounded-3xl p-6 max-w-lg w-full max-h-[80vh] flex flex-col">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-bold text-white">📜 Historique</h2>
+            <button id="closeHistoryBtn" class="text-white/50 hover:text-white/80 transition-app">✕</button>
+        </div>
+        <input type="text" id="historySearch" placeholder="🔍 Chercher dans l'historique..."
+        class="bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-app mb-3" />
+        <div id="historyList" class="flex-1 overflow-auto space-y-2 text-sm">
+            <div class="text-white/30 italic">Aucun historique</div>
+        </div>
+    </div>
+</div>
+
+<!-- ====== MODALE DIFF PREVIEW ====== -->
+<div id="diffModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 hidden p-4">
+    <div class="card rounded-3xl p-6 max-w-lg w-full max-h-[80vh] flex flex-col">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-bold text-white">🔍 Aperçu du patch</h2>
+            <button id="closeDiffBtn" class="text-white/50 hover:text-white/80 transition-app">✕</button>
+        </div>
+        <div id="diffContent" class="flex-1 overflow-auto">
+            <div class="diff-preview">
+                <div class="text-xs text-red-400 mb-1">❌ Ancien contenu</div>
+                <div class="diff-old" id="diffOld"></div>
+                <div class="text-xs text-green-400 mt-3 mb-1">✅ Nouveau contenu</div>
+                <div class="diff-new" id="diffNew"></div>
+            </div>
+        </div>
+        <div class="flex gap-3 mt-4">
+            <button id="diffApplyBtn" class="flex-1 bg-blue-600 hover:bg-blue-500 active:scale-95 transition-app py-2.5 rounded-xl text-sm font-medium text-white">🔧 Appliquer ce patch</button>
+            <button id="diffCancelBtn" class="flex-1 bg-white/5 hover:bg-white/10 active:scale-95 transition-app py-2.5 rounded-xl text-sm font-medium text-white/70">Annuler</button>
+        </div>
+    </div>
+</div>
+
+<!-- ====== MODALE EXPLICATION ====== -->
+<div id="explainModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 hidden p-4">
+    <div class="card rounded-3xl p-6 max-w-lg w-full max-h-[80vh] flex flex-col">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-bold text-white">📖 Explication</h2>
+            <button id="closeExplainBtn" class="text-white/50 hover:text-white/80 transition-app">✕</button>
+        </div>
+        <div id="explainContent" class="flex-1 overflow-auto text-sm text-gray-300 whitespace-pre-wrap leading-relaxed">
+            ⏳ Chargement...
+        </div>
+    </div>
+</div>
+
+<!-- ====== SCRIPTS ====== -->
+<script>
+(function() {
+    'use strict';
+
+    // ============================================
+    // BRAINCODE v1.2.2 — Plein écran + Signature
+    // ============================================
+
+    // === DOM REFS ===
+    const $ = id => document.getElementById(id);
+    const apiKeyInput = $('apiKeyInput');
+    const saveKeyBtn = $('saveKeyBtn');
+    const keyStatus = $('keyStatus');
+    const balanceDisplay = $('balanceDisplay');
+    const refreshBalanceBtn = $('refreshBalanceBtn');
+    const fullCodeInput = $('fullCodeInput');
+    const instructionsInput = $('instructionsInput');
+    const sendBtn = $('sendBtn');
+    const batchContainer = $('batchContainer');
+    const batchInput = $('batchInput');
+    const batchSendBtn = $('batchSendBtn');
+    const toggleBatchBtn = $('toggleBatchBtn');
+    const patchesContainer = $('patchesContainer');
+    const patchTimestamp = $('patchTimestamp');
+    const finalCodeDisplay = $('finalCodeDisplay');
+    const copyFinalBtn = $('copyFinalBtn');
+    const exportFinalBtn = $('exportFinalBtn');
+    const showHistoryBtn = $('showHistoryBtn');
+    const undoBtn = $('undoBtn');
+    const codeStats = $('codeStats');
+    const tagStatus = $('tagStatus');
+    const loadExampleBtn = $('loadExampleBtn');
+    const resetCodeBtn = $('resetCodeBtn');
+    const autoTagBtn = $('autoTagBtn');
+    const consoleOutput = $('consoleOutput');
+    const clearConsoleBtn = $('clearConsoleBtn');
+    const copyConsoleBtn = $('copyConsoleBtn');
+    const sandboxIframe = $('sandboxIframe');
+    const refreshSandboxBtn = $('refreshSandboxBtn');
+    const fullscreenSandboxBtn = $('fullscreenSandboxBtn');
+    const providerSelect = $('providerSelect');
+    const historyModal = $('historyModal');
+    const closeHistoryBtn = $('closeHistoryBtn');
+    const historySearch = $('historySearch');
+    const historyList = $('historyList');
+    const diffModal = $('diffModal');
+    const closeDiffBtn = $('closeDiffBtn');
+    const diffOld = $('diffOld');
+    const diffNew = $('diffNew');
+    const diffApplyBtn = $('diffApplyBtn');
+    const diffCancelBtn = $('diffCancelBtn');
+    const explainModal = $('explainModal');
+    const closeExplainBtn = $('closeExplainBtn');
+    const explainContent = $('explainContent');
+    const progressBar = $('progressBar');
+    const streamDisplay = $('streamDisplay');
+
+    // === ÉTAT ===
+    let fullCode = localStorage.getItem('braincode_full_code') || '';
+    let sectionMapping = JSON.parse(localStorage.getItem('braincode_section_mapping') || '{}');
+    let patchHistory = JSON.parse(localStorage.getItem('braincode_patch_history') || '[]');
+    let isBatchMode = false;
+    let pendingPatch = null;
+    let isStreaming = false;
+
+    // === UNDO SYSTEM ===
+    let undoStack = JSON.parse(localStorage.getItem('braincode_undo_stack') || '[]');
+    const MAX_UNDO = 10;
+
+    function pushUndo(code) {
+        undoStack.push(code);
+        if (undoStack.length > MAX_UNDO) undoStack.shift();
+        localStorage.setItem('braincode_undo_stack', JSON.stringify(undoStack));
+        updateUndoButton();
+    }
+
+    function popUndo() {
+        if (undoStack.length === 0) return null;
+        var previous = undoStack.pop();
+        localStorage.setItem('braincode_undo_stack', JSON.stringify(undoStack));
+        updateUndoButton();
+        return previous;
+    }
+
+    function updateUndoButton() {
+        undoBtn.disabled = undoStack.length === 0;
+        undoBtn.className = 'text-xs px-3 py-1.5 rounded-full transition-app ' +
+            (undoStack.length === 0 ?
+                'bg-white/5 text-white/20 cursor-not-allowed' :
+                'bg-white/5 hover:bg-white/10 text-white/50');
+    }
+
+    // === CONSOLE ===
+    function log(message, type) {
+        type = type || 'info';
+        var prefix = { info: 'ℹ️', success: '✅', error: '❌', warning: '⚠️', debug: '🔍', tag: '🏷️' };
+        var timestamp = new Date().toLocaleTimeString();
+        var line = '[' + timestamp + '] ' + (prefix[type] || '•') + ' ' + message;
+        consoleOutput.textContent += (consoleOutput.textContent ? '\n' : '') + line;
+        consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        console.log('[Braincode] ' + message);
+    }
+
+    function clearConsole() { consoleOutput.textContent = '🧹 Console vidée'; }
+    function copyConsole() {
+        navigator.clipboard.writeText(consoleOutput.textContent).then(function() {
+            var orig = copyConsoleBtn.textContent;
+            copyConsoleBtn.textContent = '✅';
+            setTimeout(function() { copyConsoleBtn.textContent = orig; }, 1500);
+        });
+    }
+    clearConsoleBtn.addEventListener('click', clearConsole);
+    copyConsoleBtn.addEventListener('click', copyConsole);
+
+    // === CHARGEMENT ===
+    function loadFullCode() {
+        var saved = localStorage.getItem('braincode_full_code');
+        if (saved) {
+            fullCode = saved;
+            fullCodeInput.value = saved;
+            updateFinalCodeDisplay();
+            updateCodeStats();
+            log('Code source chargé', 'success');
+            updateTagStatus();
+            updateSandbox();
+        }
+        updateUndoButton();
+    }
+
+    function updateFinalCodeDisplay() {
+        finalCodeDisplay.textContent = fullCode || '⏳ Aucun code source.';
+        localStorage.setItem('braincode_full_code', fullCode);
+        localStorage.setItem('braincode_section_mapping', JSON.stringify(sectionMapping));
+        localStorage.setItem('braincode_patch_history', JSON.stringify(patchHistory));
+        updateSandbox();
+    }
+
+    function updateCodeStats() {
+        var sections = extractSections(fullCode);
+        codeStats.textContent = '📊 ' + sections.length + ' sections';
+    }
+
+    function updateTagStatus() {
+        if (hasTags(fullCode)) {
+            tagStatus.textContent = '✅ Balisé';
+            tagStatus.className = 'text-[10px] text-green-400';
+        } else {
+            tagStatus.textContent = '⚪ Non balisé';
+            tagStatus.className = 'text-[10px] text-white/30';
+        }
+    }
+
+    function hasTags(code) {
+        return /<!--\s*SECTION:/i.test(code);
+    }
+
+    function extractSections(code) {
+        var regex = /<!--\s*SECTION:\s*([^\n]+)\s*-->([\s\S]*?)<!--\s*\/SECTION:\s*\1\s*-->/gi;
+        var sections = [];
+        var match;
+        while ((match = regex.exec(code)) !== null) {
+            sections.push({
+                name: match[1].trim(),
+                content: match[2].trim(),
+                fullMatch: match[0]
+            });
+        }
+        return sections;
+    }
+
+    // === SANDBOX ===
+    function updateSandbox() {
+        try {
+            var htmlContent = fullCode || '<html><body><p class="text-white/40 p-4">⏳ Aucun code</p>
+<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js'));}</script>
+</body></html>';
+            sandboxIframe.srcdoc = htmlContent;
+        } catch (e) {
+            log('❌ Erreur sandbox: ' + e.message, 'error');
+        }
+    }
+    refreshSandboxBtn.addEventListener('click', updateSandbox);
+
+    // === PLEIN ÉCRAN ===
+    fullscreenSandboxBtn.addEventListener('click', function() {
+        if (!document.fullscreenElement) {
+            sandboxIframe.requestFullscreen().catch(err => {
+                alert('❌ Impossible de passer en plein écran : ' + err.message);
+            });
+        } else {
+            document.exitFullscreen();
+        }
+    });
+
+    // === HISTORIQUE AVEC RECHERCHE ===
+    function renderHistory(filter) {
+        filter = filter || '';
+        var filtered = patchHistory.filter(function(entry) {
+            return entry.section.toLowerCase().includes(filter.toLowerCase()) ||
+                   (entry.instruction && entry.instruction.toLowerCase().includes(filter.toLowerCase()));
+        });
+        if (filtered.length === 0) {
+            historyList.innerHTML = '<div class="text-white/30 italic">Aucun historique trouvé</div>';
+            return;
+        }
+        var html = '';
+        filtered.slice().reverse().forEach(function(entry) {
+            var date = new Date(entry.timestamp).toLocaleString();
+            html += '<div class="bg-white/5 p-3 rounded-xl border border-white/5">';
+            html += '<div class="flex items-center justify-between">';
+            html += '<span class="text-xs font-mono text-cyan-400">📌 ' + entry.section + '</span>';
+            html += '<span class="text-[10px] text-white/30">' + date + '</span>';
+            html += '</div>';
+            if (entry.instruction) {
+                html += '<div class="text-xs text-white/40 mt-1">📝 ' + entry.instruction + '</div>';
+            }
+            html += '<div class="text-[10px] text-white/20 mt-1">' + (entry.newContent || 'Suppression').substring(0, 100) + '...</div>';
+            html += '</div>';
+        });
+        historyList.innerHTML = html;
+    }
+
+    function showHistory() {
+        historyModal.classList.remove('hidden');
+        renderHistory('');
+    }
+
+    closeHistoryBtn.addEventListener('click', function() {
+        historyModal.classList.add('hidden');
+    });
+    historyModal.addEventListener('click', function(e) {
+        if (e.target === historyModal) historyModal.classList.add('hidden');
+    });
+    historySearch.addEventListener('input', function() {
+        renderHistory(this.value);
+    });
+
+    showHistoryBtn.addEventListener('click', showHistory);
+
+    // === DIFF PREVIEW ===
+    function showDiff(oldContent, newContent, patch, instruction) {
+        diffOld.textContent = oldContent || '⚠️ Suppression';
+        diffNew.textContent = newContent || '⚠️ Suppression';
+        pendingPatch = { patch: patch, instruction: instruction };
+        diffModal.classList.remove('hidden');
+    }
+
+    closeDiffBtn.addEventListener('click', function() {
+        diffModal.classList.add('hidden');
+        pendingPatch = null;
+    });
+    diffCancelBtn.addEventListener('click', function() {
+        diffModal.classList.add('hidden');
+        pendingPatch = null;
+    });
+    diffModal.addEventListener('click', function(e) {
+        if (e.target === diffModal) {
+            diffModal.classList.add('hidden');
+            pendingPatch = null;
+        }
+    });
+    diffApplyBtn.addEventListener('click', function() {
+        if (pendingPatch) {
+            var result = applyPatch(pendingPatch.patch, pendingPatch.instruction);
+            if (result) {
+                log('✅ Patch "' + pendingPatch.patch.section + '" appliqué', 'success');
+                var flashDiv = document.createElement('div');
+                flashDiv.className = 'patch-flash';
+                flashDiv.style.position = 'absolute';
+                flashDiv.style.top = '0';
+                flashDiv.style.left = '0';
+                flashDiv.style.right = '0';
+                flashDiv.style.bottom = '0';
+                flashDiv.style.pointerEvents = 'none';
+                sandboxIframe.contentDocument?.body?.appendChild(flashDiv);
+                setTimeout(function() {
+                    flashDiv.remove();
+                }, 1000);
+            }
+            diffModal.classList.add('hidden');
+            pendingPatch = null;
+        }
+    });
+
+    // === EXPLAIN SECTION ===
+    async function explainSection(sectionName) {
+        var apiKey = localStorage.getItem('braincode_api_key');
+        if (!apiKey) {
+            alert('⚠️ Sauvegarde ta clé API.');
+            return;
+        }
+
+        explainModal.classList.remove('hidden');
+        explainContent.textContent = '⏳ Génération de l\'explication...';
+
+        var sections = extractSections(fullCode);
+        var section = sections.find(function(s) { return s.name === sectionName; });
+        if (!section) {
+            explainContent.textContent = '❌ Section non trouvée.';
+            return;
+        }
+
+        var code = fullCodeInput.value.trim();
+        var config = getProviderConfig();
+
+        try {
+            var response = await fetch(config.url, {
+                method: 'POST',
+                headers: {
+                    'Authorization': config.authPrefix + apiKey,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: config.model,
+                    messages: [{
+                        role: 'system',
+                        content: 'Tu es un expert en code. Explique de manière claire et concise ce que fait ce bloc de code, quel est son rôle, et comment il s\'intègre dans le projet. Réponds en français.'
+                    }, {
+                        role: 'user',
+                        content: 'Voici le code de la section "' + sectionName + '" :\n\n' + section.content + '\n\nExplique-moi ce que fait ce code.'
+                    }],
+                    stream: false
+                })
+            });
+
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+
+            var data = await response.json();
+            var explanation;
+            if (providerSelect.value === 'anthropic') {
+                explanation = data.content[0].text;
+            } else {
+                explanation = data.choices[0].message.content;
+            }
+
+            explainContent.textContent = explanation;
+            log('📖 Explication générée pour "' + sectionName + '"', 'success');
+
+        } catch (err) {
+            explainContent.textContent = '❌ Erreur : ' + err.message;
+            log('❌ Erreur explication: ' + err.message, 'error');
+        }
+    }
+
+    closeExplainBtn.addEventListener('click', function() {
+        explainModal.classList.add('hidden');
+    });
+    explainModal.addEventListener('click', function(e) {
+        if (e.target === explainModal) explainModal.classList.add('hidden');
+    });
+
+    // === APPLICATION D'UN PATCH ===
+    function applyPatch(patch, instruction) {
+        instruction = instruction || '';
+        var section = patch.section;
+        var newContent = patch.newContent;
+        log('Application du patch sur "' + section + '"...', 'debug');
+
+        pushUndo(fullCode);
+
+        var oldContent = '';
+        var regex = new RegExp('<!--\\s*SECTION:\\s*' + escapeRegex(section) + '\\s*-->([\\s\\S]*?)<!--\\s*\\/SECTION:\\s*' + escapeRegex(section) + '\\s*-->', 'gi');
+        var match = regex.exec(fullCode);
+        if (match) oldContent = match[0];
+
+        if (newContent === null || newContent === 'null') {
+            fullCode = fullCode.replace(regex, '');
+            log('Section "' + section + '" supprimée', 'success');
+            fullCodeInput.value = fullCode;
+            updateFinalCodeDisplay();
+            updateCodeStats();
+            finalCodeDisplay.textContent = fullCode;
+            delete sectionMapping[section];
+            localStorage.setItem('braincode_section_mapping', JSON.stringify(sectionMapping));
+            addToHistory({ section: section, newContent: null, oldContent: oldContent }, instruction);
+            return true;
+        }
+
+        var cleanContent = newContent;
+        cleanContent = cleanContent.replace(/^```(?:jsx|javascript|html)?\s*/i, '');
+        cleanContent = cleanContent.replace(/\s*```$/, '');
+        cleanContent = cleanContent.trim();
+
+        if (cleanContent === '') {
+            log('⚠️ Contenu vide reçu pour "' + section + '", conservation', 'warning');
+            return false;
+        }
+
+        var newSection = '<!-- SECTION: ' + section + ' -->\n' + cleanContent + '\n<!-- /SECTION: ' + section + ' -->';
+
+        if (match) {
+            fullCode = fullCode.replace(match[0], newSection);
+            log('Section "' + section + '" mise à jour', 'success');
+        } else {
+            fullCode += '\n' + newSection;
+            log('Section "' + section + '" créée', 'success');
+            sectionMapping[section] = { originalName: section, type: 'patch-created', timestamp: new Date().toISOString() };
+            localStorage.setItem('braincode_section_mapping', JSON.stringify(sectionMapping));
+        }
+
+        fullCodeInput.value = fullCode;
+        updateFinalCodeDisplay();
+        updateCodeStats();
+        finalCodeDisplay.textContent = fullCode;
+        addToHistory({ section: section, newContent: cleanContent, oldContent: oldContent }, instruction);
+        updateSandbox();
+        return true;
+    }
+
+    function escapeRegex(string) {
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    function addToHistory(patch, instruction) {
+        var entry = {
+            id: Date.now(),
+            timestamp: new Date().toISOString(),
+            section: patch.section,
+            oldContent: patch.oldContent || '',
+            newContent: patch.newContent,
+            instruction: instruction || '',
+            fullCode: fullCode
+        };
+        patchHistory.push(entry);
+        if (patchHistory.length > 50) patchHistory.shift();
+        localStorage.setItem('braincode_patch_history', JSON.stringify(patchHistory));
+    }
+
+    // === SANITIZATION ===
+    function sanitizeCode(code) {
+        var cleaned = code;
+        cleaned = cleaned.replace(/\s{3,}/g, ' ');
+        cleaned = cleaned.replace(/\r\n/g, '\n');
+        cleaned = cleaned.replace(/<!--\s*SECTION:/gi, '<!-- SECTION:');
+        cleaned = cleaned.replace(/<!--\s*\/SECTION:/gi, '<!-- /SECTION:');
+        return cleaned;
+    }
+
+    // === EXTRACTION JSON ROBUSTE ===
+    function extractJSON(text) {
+        try {
+            return JSON.parse(text);
+        } catch (e) {
+            var match = text.match(/(\{[\s\S]*\})/);
+            if (match) {
+                try {
+                    return JSON.parse(match[1]);
+                } catch (e2) {
+                    throw new Error('Impossible d\'extraire le JSON: ' + e2.message);
+                }
+            }
+            throw new Error('Aucun JSON trouvé dans la réponse');
+        }
+    }
+
+    // === BALISAGE HTML AVEC SANITIZATION ===
+    function autoTagCode(code) {
+        log('🏷️ Balisage HTML (sanitized)...', 'tag');
+
+        var cleanCode = sanitizeCode(code);
+
+        var styleRegex = /<style[^>]*>[\s\S]*?<\/style>/gi;
+        var styleBlocks = [];
+        var match;
+        var tempCode = cleanCode;
+        var styleIndex = 0;
+
+        while ((match = styleRegex.exec(tempCode)) !== null) {
+            var placeholder = '__STYLE_PLACEHOLDER_' + styleIndex + '__';
+            styleBlocks.push({ content: match[0], placeholder: placeholder, name: 'style' + (styleIndex > 0 ? '_' + (styleIndex + 1) : '') });
+            tempCode = tempCode.replace(match[0], placeholder);
+            styleIndex++;
+        }
+
+        var scriptRegex = /<script[^>]*>[\s\S]*?<\/script>/gi;
+        var scriptBlocks = [];
+        while ((match = scriptRegex.exec(tempCode)) !== null) {
+            var placeholder2 = '__SCRIPT_PLACEHOLDER_' + scriptBlocks.length + '__';
+            scriptBlocks.push({ content: match[0], placeholder: placeholder2 });
+            tempCode = tempCode.replace(match[0], placeholder2);
+        }
+
+        var idRegex = /<(div|section|button|canvas|input|app-container|image-wrapper|result-area|header|main|nav|form)[^>]*id="([^"]+)"[^>]*>/gi;
+        var idBlocks = [];
+        while ((match = idRegex.exec(tempCode)) !== null) {
+            var idName = match[2];
+            var startIdx = match.index;
+            var endIdx = tempCode.indexOf('</' + match[1] + '>', startIdx);
+            if (endIdx === -1) continue;
+            var fullBlock = tempCode.substring(startIdx, endIdx + ('</' + match[1] + '>').length);
+            if (!idBlocks.some(function(b) { return b.name === idName; })) {
+                idBlocks.push({ name: idName, content: fullBlock });
+            }
+        }
+
+        var jsRegex = /(const|function|class|export)\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*[=({]/g;
+        var jsBlocks = [];
+        while ((match = jsRegex.exec(tempCode)) !== null) {
+            var name = match[2];
+            var startIdx = match.index;
+            var braceCount = 0;
+            var i = startIdx;
+            while (i < tempCode.length) {
+                if (tempCode[i] === '{') braceCount++;
+                else if (tempCode[i] === '}') {
+                    braceCount--;
+                    if (braceCount === 0) {
+                        var fullBlock = tempCode.substring(startIdx, i + 1);
+                        if (!jsBlocks.some(function(b) { return b.name === name; })) {
+                            jsBlocks.push({ name: name, content: fullBlock });
+                        }
+                        break;
+                    }
+                }
+                i++;
+            }
+        }
+
+        var finalCode = tempCode;
+        var added = [];
+
+        styleBlocks.forEach(function(block) {
+            var section = '<!-- SECTION: ' + block.name + ' -->\n' + block.content + '\n<!-- /SECTION: ' + block.name + ' -->';
+            finalCode = finalCode.replace(block.placeholder, section);
+            added.push(block.name);
+        });
+
+        var otherSections = idBlocks.concat(jsBlocks);
+        otherSections.sort(function(a, b) {
+            return finalCode.indexOf(a.content) - finalCode.indexOf(b.content);
+        });
+        for (var i = otherSections.length - 1; i >= 0; i--) {
+            var block = otherSections[i];
+            if (new RegExp('<!--\\s*SECTION:\\s*' + block.name + '\\s*-->', 'i').test(finalCode)) continue;
+            var section = '<!-- SECTION: ' + block.name + ' -->\n' + block.content + '\n<!-- /SECTION: ' + block.name + ' -->';
+            finalCode = finalCode.replace(block.content, section);
+            added.push(block.name);
+        }
+
+        scriptBlocks.forEach(function(block) {
+            finalCode = finalCode.replace(block.placeholder, block.content);
+        });
+
+        finalCode = sanitizeCode(finalCode);
+
+        var newMapping = {};
+        extractSections(finalCode).forEach(function(s) {
+            newMapping[s.name] = { originalName: s.name, type: 'auto-detected', timestamp: new Date().toISOString() };
+        });
+        sectionMapping = newMapping;
+
+        log('🏷️ ' + added.length + ' sections balisées (sanitized)', 'success');
+        return { code: finalCode, added: added };
+    }
+
+    function applyAutoTag() {
+        var code = fullCodeInput.value.trim();
+        if (!code) { alert('📄 Colle du code !'); return; }
+        pushUndo(fullCode);
+        var result = autoTagCode(code);
+        if (result) {
+            fullCode = result.code;
+            fullCodeInput.value = result.code;
+            updateFinalCodeDisplay();
+            updateCodeStats();
+            tagStatus.textContent = '✅ Balisé';
+            tagStatus.className = 'text-[10px] text-green-400';
+            log('🏷️ ' + result.added.length + ' sections balisées', 'success');
+            patchesContainer.innerHTML = '<div class="text-white/40 italic text-sm">✅ Code balisé ! ' + result.added.length + ' sections.</div>';
+            updateSandbox();
+        }
+    }
+
+    // === CONFIGURATION PROVIDER ===
+    function getProviderConfig() {
+        var provider = providerSelect.value;
+        var configs = {
+            deepseek: {
+                url: 'https://api.deepseek.com/v1/chat/completions',
+                model: 'deepseek-v4-flash',
+                authPrefix: 'Bearer ',
+                stream: true
+            },
+            openai: {
+                url: 'https://api.openai.com/v1/chat/completions',
+                model: 'gpt-4o-mini',
+                authPrefix: 'Bearer ',
+                stream: true
+            },
+            anthropic: {
+                url: 'https://api.anthropic.com/v1/messages',
+                model: 'claude-3-5-sonnet-20241022',
+                authPrefix: 'x-api-key: ',
+                stream: false
+            }
+        };
+        return configs[provider] || configs.deepseek;
+    }
+
+    // === STREAMING + BARRE DE PROGRESSION ===
+    function updateProgress(progress) {
+        progressBar.style.width = Math.min(progress, 100) + '%';
+    }
+
+    function resetProgress() {
+        progressBar.style.width = '0%';
+    }
+
+    function streamDisplayAppend(text) {
+        streamDisplay.classList.remove('hidden');
+        streamDisplay.textContent += text;
+        streamDisplay.scrollTop = streamDisplay.scrollHeight;
+    }
+
+    function streamDisplayClear() {
+        streamDisplay.textContent = '';
+        streamDisplay.classList.add('hidden');
+    }
+
+    // === ENVOI DE REQUÊTE AVEC STREAMING ===
+    async function sendRequest(instruction) {
+        var apiKey = localStorage.getItem('braincode_api_key');
+        if (!apiKey) { log('❌ Aucune clé API', 'error'); alert('⚠️ Sauvegarde ta clé API.'); return false; }
+
+        var code = fullCodeInput.value.trim();
+        if (!code) { log('❌ Aucun code', 'error'); alert('📄 Colle du code.'); return false; }
+        if (!instruction) { log('❌ Aucune instruction', 'error'); alert('📝 Donne une instruction.'); return false; }
+
+        if (!hasTags(code)) {
+            log('⚠️ Code non balisé. Balisage auto...', 'warning');
+            pushUndo(fullCode);
+            var result = autoTagCode(code);
+            if (result) {
+                code = result.code;
+                fullCodeInput.value = code;
+                fullCode = code;
+                updateFinalCodeDisplay();
+                updateCodeStats();
+                tagStatus.textContent = '✅ Balisé';
+                tagStatus.className = 'text-[10px] text-green-400';
+            }
+        }
+
+        var sections = extractSections(code);
+        var sectionsNames = sections.map(function(s) { return s.name; }).join(', ');
+        log('📤 Envoi: "' + instruction.substring(0, 50) + '..." (' + sections.length + ' sections)', 'info');
+
+        patchesContainer.innerHTML = '<div class="text-white/40 italic text-sm animate-pulse">⏳ Envoi en cours...</div>';
+        resetProgress();
+        streamDisplayClear();
+
+        var config = getProviderConfig();
+
+        var body;
+        if (providerSelect.value === 'anthropic') {
+            body = {
+                model: config.model,
+                max_tokens: 4096,
+                messages: [{
+                    role: 'user',
+                    content: 'Code:\n' + code + '\n\nInstruction: ' + instruction
+                }],
+                system: 'Tu es un expert en React/HTML. Voici le code source avec des sections balisées (<!-- SECTION: nom --> ... <!-- /SECTION: nom -->). Sections: ' + sectionsNames + '.\n\nRÈGLES IMPORTANTES :\n1. Pour modifier une section, tu DOIS renvoyer le contenu COMPLET de la section dans "newContent".\n2. Ne renvoie JAMAIS "newContent" vide.\n3. Pour une section "style", tu dois renvoyer tout le bloc <style>...</style> avec les modifications.\n4. Réponds UNIQUEMENT avec un JSON valide : {"patches": [{"section": "nom", "newContent": "contenu_complet"}]}'
+            };
+        } else {
+            body = {
+                model: config.model,
+                messages: [{
+                    role: 'system',
+                    content: 'Tu es un expert en React/HTML. Voici le code source avec des sections balisées (<!-- SECTION: nom --> ... <!-- /SECTION: nom -->). Sections: ' + sectionsNames + '.\n\nRÈGLES IMPORTANTES :\n1. Pour modifier une section, tu DOIS renvoyer le contenu COMPLET de la section dans "newContent".\n2. Ne renvoie JAMAIS "newContent" vide.\n3. Pour une section "style", tu dois renvoyer tout le bloc <style>...</style> avec les modifications.\n4. Réponds UNIQUEMENT avec un JSON valide : {"patches": [{"section": "nom", "newContent": "contenu_complet"}]}'
+                }, {
+                    role: 'user',
+                    content: 'Code:\n' + code + '\n\nInstruction: ' + instruction
+                }],
+                stream: config.stream || false
+            };
+        }
+
+        try {
+            var response = await fetch(config.url, {
+                method: 'POST',
+                headers: {
+                    'Authorization': config.authPrefix + apiKey,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(body)
+            });
+
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+
+            if (config.stream && response.body) {
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let fullResponse = '';
+                let progress = 0;
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    const chunk = decoder.decode(value);
+                    const lines = chunk.split('\n').filter(line => line.trim() !== '');
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const data = line.slice(6);
+                            if (data === '[DONE]') continue;
+
+                            try {
+                                const parsed = JSON.parse(data);
+                                const delta = parsed.choices?.[0]?.delta?.content;
+                                if (delta) {
+                                    fullResponse += delta;
+                                    streamDisplayAppend(delta);
+                                    progress = Math.min(progress + 0.5, 90);
+                                    updateProgress(progress);
+                                }
+                            } catch (e) {}
+                        }
+                    }
+                }
+
+                updateProgress(100);
+                log('📥 Réponse reçue en streaming (' + fullResponse.length + ' caractères)', 'info');
+                var responseText = fullResponse;
+
+            } else {
+                var data = await response.json();
+                var responseText;
+                if (providerSelect.value === 'anthropic') {
+                    responseText = data.content[0].text;
+                } else {
+                    responseText = data.choices[0].message.content;
+                }
+
+                streamDisplay.classList.remove('hidden');
+                for (var i = 0; i < responseText.length; i++) {
+                    streamDisplay.textContent += responseText[i];
+                    if (i % 5 === 0) {
+                        updateProgress((i / responseText.length) * 100);
+                    }
+                    await new Promise(r => setTimeout(r, 1));
+                }
+                updateProgress(100);
+                log('📥 Réponse reçue (' + responseText.length + ' caractères)', 'info');
+            }
+
+            var patchesData;
+            try {
+                patchesData = extractJSON(responseText);
+            } catch (err) {
+                log('❌ Erreur extraction JSON: ' + err.message, 'error');
+                patchesContainer.innerHTML = '<div class="text-red-400/80 text-sm">❌ ' + err.message + '</div>';
+                return false;
+            }
+
+            var patches = patchesData.patches || [];
+            if (patches.length === 0) {
+                patchesContainer.innerHTML = '<div class="text-yellow-400/80 text-sm">⚠️ Aucun patch généré.</div>';
+                log('Aucun patch généré', 'warning');
+                return false;
+            }
+
+            log('📦 ' + patches.length + ' patch(s) générés', 'success');
+
+            var html = '<div class="space-y-2">';
+            html += '<div class="flex items-center justify-between">';
+            html += '<span class="text-sm text-green-400">✅ ' + patches.length + ' patch(s) : ' + patches.map(function(p) { return p.section; }).join(', ') + '</span>';
+            html += '<div class="flex gap-2">';
+            html += '<button id="applyAllBtn" class="bg-blue-600/30 hover:bg-blue-600/50 active:scale-95 transition-app px-3 py-1 rounded-xl text-xs text-blue-300 border border-blue-500/20">Tout appliquer</button>';
+            html += '</div></div>';
+            patches.forEach(function(patch, idx) {
+                html += '<div class="flex items-center justify-between bg-white/5 p-2 rounded-xl border border-white/5">';
+                html += '<span class="text-xs font-mono text-cyan-400">📌 ' + patch.section + '</span>';
+                html += '<div class="flex gap-1">';
+                html += '<button class="explainPatchBtn bg-purple-600/20 hover:bg-purple-600/40 active:scale-95 transition-app px-2 py-1 rounded-lg text-xs text-purple-300" data-section="' + patch.section + '">📖</button>';
+                html += '<button class="diffPreviewBtn bg-white/5 hover:bg-white/10 active:scale-95 transition-app px-2 py-1 rounded-lg text-xs text-white/50" data-index="' + idx + '">👁️</button>';
+                html += '<button class="applyPatchBtn bg-blue-600/20 hover:bg-blue-600/40 active:scale-95 transition-app px-2 py-1 rounded-lg text-xs text-blue-300" data-index="' + idx + '">🔧</button>';
+                html += '</div></div>';
+            });
+            if (patchesData.explanation) {
+                html += '<div class="text-[10px] text-white/30 border-t border-white/5 pt-2 mt-1">💡 ' + patchesData.explanation + '</div>';
+            }
+            html += '</div>';
+            patchesContainer.innerHTML = html;
+            patchTimestamp.textContent = new Date().toLocaleTimeString();
+
+            document.querySelectorAll('.explainPatchBtn').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var sectionName = this.dataset.section;
+                    explainSection(sectionName);
+                });
+            });
+
+            document.querySelectorAll('.diffPreviewBtn').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var idx = parseInt(this.dataset.index);
+                    var patch = patches[idx];
+                    var section = patch.section;
+                    var regex = new RegExp('<!--\\s*SECTION:\\s*' + escapeRegex(section) + '\\s*-->([\\s\\S]*?)<!--\\s*\\/SECTION:\\s*' + escapeRegex(section) + '\\s*-->', 'gi');
+                    var match = regex.exec(fullCode);
+                    var oldContent = match ? match[1] : '(section non trouvée)';
+                    showDiff(oldContent, patch.newContent || '(suppression)', patch, instruction);
+                });
+            });
+
+            document.querySelectorAll('.applyPatchBtn').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var idx = parseInt(this.dataset.index);
+                    var patch = patches[idx];
+                    var result = applyPatch(patch, instruction);
+                    if (result) {
+                        this.textContent = '✅';
+                        this.disabled = true;
+                        this.className = 'bg-green-500/20 text-green-400 px-2 py-1 rounded-lg text-xs';
+                        log('✅ Patch "' + patch.section + '" appliqué', 'success');
+                    }
+                });
+            });
+
+            document.getElementById('applyAllBtn')?.addEventListener('click', function() {
+                var count = 0;
+                patches.forEach(function(p) { if (applyPatch(p, instruction)) count++; });
+                log('✅ ' + count + '/' + patches.length + ' patches appliqués', 'success');
+                this.textContent = '✅ Appliqué';
+                this.disabled = true;
+                document.querySelectorAll('.applyPatchBtn').forEach(function(b) {
+                    b.textContent = '✅';
+                    b.disabled = true;
+                    b.className = 'bg-green-500/20 text-green-400 px-2 py-1 rounded-lg text-xs';
+                });
+            });
+
+            return true;
+
+        } catch (err) {
+            log('❌ Erreur : ' + err.message, 'error');
+            patchesContainer.innerHTML = '<div class="text-red-400/80 text-sm">❌ ' + err.message + '</div>';
+            return false;
+        }
+    }
+
+    // === GESTION DES ENVOIS ===
+    sendBtn.addEventListener('click', async function() {
+        var instruction = instructionsInput.value.trim();
+        if (!instruction) { alert('📝 Donne une instruction.'); return; }
+        sendBtn.disabled = true;
+        sendBtn.innerHTML = '⏳ Patcher...';
+        await sendRequest(instruction);
+        sendBtn.disabled = false;
+        sendBtn.innerHTML = '🚀 Patcher';
+    });
+
+    instructionsInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            var instruction = instructionsInput.value.trim();
+            if (instruction) {
+                sendBtn.disabled = true;
+                sendBtn.innerHTML = '⏳ Patcher...';
+                sendRequest(instruction).then(function() {
+                    sendBtn.disabled = false;
+                    sendBtn.innerHTML = '🚀 Patcher';
+                });
+            }
+        }
+    });
+
+    // === MODE BATCH ===
+    toggleBatchBtn.addEventListener('click', function() {
+        isBatchMode = !isBatchMode;
+        batchContainer.classList.toggle('hidden');
+        toggleBatchBtn.textContent = isBatchMode ? '📋 Batch (activé)' : '📋 Batch';
+        toggleBatchBtn.className = 'text-xs px-3 py-1.5 rounded-full transition-app ' + (isBatchMode ? 'bg-blue-600/30 text-blue-300' : 'bg-white/5 hover:bg-white/10 text-white/50');
+    });
+
+    batchSendBtn.addEventListener('click', async function() {
+        var batchText = batchInput.value.trim();
+        if (!batchText) { alert('📝 Écris des instructions.'); return; }
+        var instructions = batchText.split('\n').filter(function(line) { return line.trim(); });
+        if (instructions.length === 0) { alert('📝 Écris au moins une instruction.'); return; }
+
+        log('📋 Batch: ' + instructions.length + ' instructions', 'info');
+        patchesContainer.innerHTML = '<div class="text-white/40 italic text-sm animate-pulse">⏳ Exécution du batch...</div>';
+
+        var successCount = 0;
+        for (var i = 0; i < instructions.length; i++) {
+            var instr = instructions[i].trim();
+            var result = await sendRequest(instr);
+            if (result) successCount++;
+            if (i < instructions.length - 1) await new Promise(function(r) { setTimeout(r, 500); });
+        }
+
+        log('✅ Batch terminé : ' + successCount + '/' + instructions.length + ' réussis', 'success');
+        patchesContainer.innerHTML += '<div class="text-green-400/80 text-sm mt-1">✅ Batch : ' + successCount + '/' + instructions.length + ' réussis</div>';
+    });
+
+    // === GESTION API KEY ===
+    function loadKey() {
+        var saved = localStorage.getItem('braincode_api_key');
+        if (saved) {
+            apiKeyInput.value = saved;
+            keyStatus.textContent = '✅ Clé chargée';
+            keyStatus.className = 'text-xs text-green-400';
+            fetchBalance(saved);
+        }
+    }
+
+    function saveKey() {
+        var key = apiKeyInput.value.trim();
+        if (!key) { alert('❌ Colle ta clé.'); return; }
+        localStorage.setItem('braincode_api_key', key);
+        keyStatus.textContent = '✅ Sauvegardée';
+        keyStatus.className = 'text-xs text-green-400';
+        fetchBalance(key);
+        log('🔑 Clé sauvegardée', 'success');
+    }
+
+    async function fetchBalance(apiKey) {
+        try {
+            var resp = await fetch('https://api.deepseek.com/user/balance', {
+                headers: { 'Authorization': 'Bearer ' + apiKey }
+            });
+            var data = await resp.json();
+            if (data && data.balance_infos) {
+                var info = data.balance_infos[0];
+                balanceDisplay.textContent = '💰 ' + parseFloat(info.total_balance).toFixed(2) + ' ' + info.currency;
+            }
+        } catch (e) {
+            balanceDisplay.textContent = '💰 ❌';
+        }
+    }
+
+    saveKeyBtn.addEventListener('click', saveKey);
+    refreshBalanceBtn.addEventListener('click', function() {
+        var key = localStorage.getItem('braincode_api_key');
+        if (key) fetchBalance(key);
+    });
+
+    // === ÉVÉNEMENTS DIVERS ===
+    fullCodeInput.addEventListener('input', function() {
+        fullCode = fullCodeInput.value;
+        updateFinalCodeDisplay();
+        updateCodeStats();
+        updateTagStatus();
+    });
+
+    autoTagBtn.addEventListener('click', function() {
+        applyAutoTag();
+    });
+
+    // === KEYBOARD SHORTCUTS ===
+    document.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+            e.preventDefault();
+            var instruction = instructionsInput.value.trim();
+            if (instruction) {
+                sendBtn.disabled = true;
+                sendBtn.innerHTML = '⏳ Patcher...';
+                sendRequest(instruction).then(function() {
+                    sendBtn.disabled = false;
+                    sendBtn.innerHTML = '🚀 Patcher';
+                });
+            }
+        }
+        if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+            e.preventDefault();
+            applyAutoTag();
+        }
+        if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+            e.preventDefault();
+            var previous = popUndo();
+            if (previous) {
+                fullCode = previous;
+                fullCodeInput.value = previous;
+                updateFinalCodeDisplay();
+                updateCodeStats();
+                updateTagStatus();
+                updateSandbox();
+                log('↺ Retour à la version précédente', 'success');
+            }
+        }
+    });
+
+    // === EXEMPLE ===
+    loadExampleBtn.addEventListener('click', function() {
+        var example = '<!DOCTYPE html>\n<html>\n<head>\n<title>Pipette</title>\n<style>\nbody { background: #0f0f12; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }\n.app { background: #1a1a24; padding: 30px; border-radius: 16px; text-align: center; }\nbutton { background: #3b82f6; color: white; border: none; padding: 10px 24px; border-radius: 8px; font-size: 16px; cursor: pointer; }\n<\/style>\n<\/head>\n<body>\n<div class="app">\n<h1 class="text-white">🎨 Braincode</h1>\n<p class="text-white/50">Charge une image et sélectionne des couleurs</p>\n<button onclick="alert(\'Coucou !\')">Clique-moi</button>\n</div>\n</body>\n</html>';
+        fullCodeInput.value = example;
+        fullCode = example;
+        updateFinalCodeDisplay();
+        updateCodeStats();
+        updateTagStatus();
+        updateSandbox();
+        log('📥 Exemple chargé', 'success');
+        patchesContainer.innerHTML = '<div class="text-white/40 italic text-sm">✅ Exemple chargé.</div>';
+    });
+
+    // === RESET ===
+    resetCodeBtn.addEventListener('click', function() {
+        if (confirm('🗑️ Réinitialiser tout ?')) {
+            fullCode = '';
+            fullCodeInput.value = '';
+            sectionMapping = {};
+            patchHistory = [];
+            undoStack = [];
+            localStorage.removeItem('braincode_full_code');
+            localStorage.removeItem('braincode_section_mapping');
+            localStorage.removeItem('braincode_patch_history');
+            localStorage.removeItem('braincode_undo_stack');
+            updateFinalCodeDisplay();
+            updateCodeStats();
+            patchesContainer.innerHTML = '<div class="text-white/40 italic text-sm">🧹 Tout réinitialisé</div>';
+            tagStatus.textContent = '⚪ Non balisé';
+            tagStatus.className = 'text-[10px] text-white/30';
+            log('🧹 Tout réinitialisé', 'info');
+            updateSandbox();
+            updateUndoButton();
+        }
+    });
+
+    // === COPIER / EXPORTER ===
+    copyFinalBtn.addEventListener('click', function() {
+        navigator.clipboard.writeText(fullCode).then(function() {
+            var orig = copyFinalBtn.textContent;
+            copyFinalBtn.textContent = '✅';
+            setTimeout(function() { copyFinalBtn.textContent = orig; }, 1500);
+            log('📋 Code copié', 'success');
+        });
+    });
+
+    exportFinalBtn.addEventListener('click', function() {
+        var blob = new Blob([fullCode], { type: 'text/html' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'code.html';
+        a.click();
+        URL.revokeObjectURL(url);
+        log('⬇️ Code exporté', 'success');
+    });
+
+    // === UNDO BUTTON ===
+    undoBtn.addEventListener('click', function() {
+        var previous = popUndo();
+        if (previous) {
+            fullCode = previous;
+            fullCodeInput.value = previous;
+            updateFinalCodeDisplay();
+            updateCodeStats();
+            updateTagStatus();
+            updateSandbox();
+            log('↺ Retour à la version précédente', 'success');
+        }
+    });
+
+    // === INIT ===
+    loadKey();
+    loadFullCode();
+    updateCodeStats();
+    updateTagStatus();
+    updateSandbox();
+    log('🧠 Braincode v1.2.2 prêt ! (Plein écran + Signature)', 'success');
+    if (fullCode) {
+        patchesContainer.innerHTML = hasTags(fullCode) ?
+            '<div class="text-white/40 italic text-sm">✅ Code balisé. Envoie une instruction.</div>' :
+            '<div class="text-white/40 italic text-sm">📄 Code non balisé. Clique sur "Baliser" ou envoie une instruction.</div>';
+    }
+})();
+</script>
+
+</body>
+</html>
